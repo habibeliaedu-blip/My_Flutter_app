@@ -1,206 +1,91 @@
 import 'package:flutter/material.dart';
-
-void main() {
-
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
-
-    return MaterialApp(
-      title: 'Espace principal',
-      theme: ThemeData(
-        colorScheme: colorScheme,
-        useMaterial3: true,
-        textTheme: Theme.of(context).textTheme.apply(
-              bodyColor: colorScheme.onSurface,
-              displayColor: colorScheme.onSurface,
-            ),
-      ),
-      home: MainShell(colorScheme: colorScheme),
-    );
-  }
-}
-
-class MainShell extends StatefulWidget {
-  const MainShell({
-    required this.colorScheme,
-    super.key,
-  });
-
-  final ColorScheme colorScheme;
-
-  @override
-  State<MainShell> createState() => _MainShellState();
-}
-
-class _MainShellState extends State<MainShell> {
-  int _currentIndex = 0;
-
-  static const List<_PageConfig> _pages = <_PageConfig>[
-    _PageConfig(
-      title: 'Messages',
-      icon: Icons.chat_bubble_outline,
-    ),
-    _PageConfig(
-      title: 'Comptes prestataires',
-      icon: Icons.people_outline,
-    ),
-  
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final page = _pages[_currentIndex];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(page.title),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[
-              widget.colorScheme.primaryContainer.withOpacity(0.9),
-              widget.colorScheme.primary,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 520),
-            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-            decoration: BoxDecoration(
-              color: widget.colorScheme.surface,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: widget.colorScheme.outlineVariant),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: widget.colorScheme.shadow.withOpacity(0.25),
-                  blurRadius: 14,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: _buildPageContent(page),
-          ),
-        ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: _pages
-            .map(
-              (page) => NavigationDestination(
-                icon: Icon(page.icon),
-                label: page.title,
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _buildPageContent(_PageConfig page) {
-    switch (page.title) {
-      case 'Messages':
-        return const MessagesPage();
-      case 'Comptes prestataires':
-        return const PrestataireAccountsPage();
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-}
-
-class _PageConfig {
-  const _PageConfig({
-    required this.title,
-    required this.icon,
-  });
-
-  final String title;
-  final IconData icon;
-}
-
-class MessagesPage extends StatelessWidget {
-  const MessagesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        Icon(
-          Icons.mark_chat_read,
-          size: 64,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'Messages',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Consultez vos conversations et restez informé.',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}
-
-class PrestataireAccountsPage extends StatelessWidget {
-  const PrestataireAccountsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        Icon(
-          Icons.manage_accounts,
-          size: 64,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'Comptes prestataires',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Gérez vos profils et paramètres de prestataire.',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}
+     2
+     3  void main() {
+     4    runApp(const MyApp());
+     5  }
+     6
+     7  class MyApp extends StatelessWidget {
+     8    const MyApp({super.key});
+     9
+    10    @override
+    11    Widget build(BuildContext context) {
+    12      return MaterialApp(
+    13        title: 'Hello World App',
+    14        debugShowCheckedModeBanner: false,
+    15        theme: ThemeData(
+    16          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+    17          useMaterial3: true,
+    18        ),
+    19        home: const HomePage(),
+    20      );
+    21    }
+    22  }
+    23
+    24  class HomePage extends StatelessWidget {
+    25    const HomePage({super.key});
+    26
+    27    @override
+    28    Widget build(BuildContext context) {
+    29      final colorScheme = Theme.of(context).colorScheme;
+    30
+    31      return Scaffold(
+    32        appBar: AppBar(
+    33          title: const Text('Accueil'),
+    34          centerTitle: true,
+    35          backgroundColor: colorScheme.surface,
+    36          foregroundColor: colorScheme.onSurface,
+    37          elevation: 0,
+    38        ),
+    39        body: Container(
+    40          decoration: BoxDecoration(
+    41            gradient: LinearGradient(
+    42              begin: Alignment.topCenter,
+    43              end: Alignment.bottomCenter,
+    44              colors: [
+    45                colorScheme.primaryContainer,
+    46                colorScheme.surface,
+    47              ],
+    48            ),
+    49          ),
+    50          child: Center(
+    51            child: Card(
+    52              elevation: 6,
+    53              shape: RoundedRectangleBorder(
+    54                borderRadius: BorderRadius.circular(16),
+    55              ),
+    56              color: colorScheme.surface,
+    57              child: Padding(
+    58                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+    59                child: Column(
+    60                  mainAxisSize: MainAxisSize.min,
+    61                  children: [
+    62                    Icon(
+    63                      Icons.waving_hand,
+    64                      size: 48,
+    65                      color: colorScheme.primary,
+    66                    ),
+    67                    const SizedBox(height: 12),
+    68                    Text(
+    69                      'Hello World',
+    70                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+    71                            fontWeight: FontWeight.bold,
+    72                            color: colorScheme.onSurface,
+    73                          ),
+    74                    ),
+    75                    const SizedBox(height: 8),
+    76                    Text(
+    77                      'Bienvenue dans votre application Flutter.',
+    78                      textAlign: TextAlign.center,
+    79                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+    80                            color: colorScheme.onSurfaceVariant,
+    81                          ),
+    82                    ),
+    83                  ],
+    84                ),
+    85              ),
+    86            ),
+    87          ),
+    88        ),
+    89      );
+    90    }
+    91  }
