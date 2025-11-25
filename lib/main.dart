@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 void main() {
+
   runApp(const MyApp());
 }
 
@@ -41,7 +42,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  static const _pages = [
+  static const List<_PageConfig> _pages = <_PageConfig>[
     _PageConfig(
       title: 'Messages',
       icon: Icons.chat_bubble_outline,
@@ -50,7 +51,7 @@ class _MainShellState extends State<MainShell> {
       title: 'Comptes prestataires',
       icon: Icons.people_outline,
     ),
-  ));
+  
   ];
 
   @override
@@ -67,7 +68,7 @@ class _MainShellState extends State<MainShell> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
+            colors: <Color>[
               widget.colorScheme.primaryContainer.withOpacity(0.9),
               widget.colorScheme.primary,
             ],
@@ -82,7 +83,7 @@ class _MainShellState extends State<MainShell> {
               color: widget.colorScheme.surface,
               borderRadius: BorderRadius.circular(28),
               border: Border.all(color: widget.colorScheme.outlineVariant),
-              boxShadow: [
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: widget.colorScheme.shadow.withOpacity(0.25),
                   blurRadius: 14,
@@ -90,13 +91,13 @@ class _MainShellState extends State<MainShell> {
                 ),
               ],
             ),
-            child: _buildPageContent(page, context),
+            child: _buildPageContent(page),
           ),
         ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
+        onDestinationSelected: (int index) {
           setState(() {
             _currentIndex = index;
           });
@@ -113,7 +114,7 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  Widget _buildPageContent(_PageConfig page, BuildContext context) {
+  Widget _buildPageContent(_PageConfig page) {
     switch (page.title) {
       case 'Messages':
         return const MessagesPage();
@@ -143,7 +144,7 @@ class MessagesPage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
+      children: <Widget>[
         Icon(
           Icons.mark_chat_read,
           size: 64,
@@ -177,7 +178,7 @@ class PrestataireAccountsPage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
+      children: <Widget>[
         Icon(
           Icons.manage_accounts,
           size: 64,
