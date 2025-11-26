@@ -214,17 +214,21 @@ Future<FirebaseApp> _initializeFirebase() async {
 }
 
 Future<void> main() async {
-  final firebaseApp = _initializeFirebase();
-  runApp(MyApp(firebaseInit: firebaseApp));
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
+  runZonedGuarded(
+    () async {
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+      };
 
-  runApp(const MyApp());
+      final firebaseApp = _initializeFirebase();
+      runApp(MyApp(firebaseInit: firebaseApp));
+    },
+    (error, stack) {
+      // Errors are surfaced via the error screen; also log to console for debugging.
+      // ignore: avoid_print
+      print('Uncaught zone error: $error\n$stack');
+    },
+  );
 }
 
 class MyApp extends StatefulWidget {
