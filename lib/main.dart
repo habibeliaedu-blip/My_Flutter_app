@@ -149,6 +149,73 @@ class AppStateScope extends InheritedNotifier<AppState> {
   }
 }
 
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorScreen extends StatelessWidget {
+  const _ErrorScreen({required this.error});
+
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                const Text(
+                  'Une erreur est survenue pendant le démarrage.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<FirebaseApp> _initializeFirebase() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (Firebase.apps.isEmpty) {
+    return Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+  return Firebase.apps.first;
+}
+
+Future<void> main() async {
+  final firebaseApp = _initializeFirebase();
+  runApp(MyApp(firebaseInit: firebaseApp));
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (Firebase.apps.isEmpty) {
@@ -161,7 +228,9 @@ Future<void> main() async {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.firebaseInit});
+
+  final Future<FirebaseApp> firebaseInit;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -178,33 +247,48 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AppStateScope(
-      notifier: _appState,
-      child: MaterialApp(
-        title: 'JOKKO DIMBALI',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A4F58)),
-          useMaterial3: true,
-          scaffoldBackgroundColor: Colors.transparent,
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+    return FutureBuilder(
+      future: widget.firebaseInit,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _SplashScreen();
+        }
+
+        if (snapshot.hasError) {
+          return _ErrorScreen(error: snapshot.error.toString());
+        }
+
+        return AppStateScope(
+          notifier: _appState,
+          child: MaterialApp(
+            title: 'JOKKO DIMBALI',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme:
+                  ColorScheme.fromSeed(seedColor: const Color(0xFF4A4F58)),
+              useMaterial3: true,
+              scaffoldBackgroundColor: Colors.transparent,
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
             ),
+            routes: {
+              HomePage.routeName: (_) => const HomePage(),
+              ReservationPage.routeName: (_) => const ReservationPage(),
+              RdvPage.routeName: (_) => const RdvPage(),
+              MessagesPage.routeName: (_) => const MessagesPage(),
+              SettingsPage.routeName: (_) => const SettingsPage(),
+            },
+            initialRoute: HomePage.routeName,
           ),
-        ),
-        routes: {
-          HomePage.routeName: (_) => const HomePage(),
-          ReservationPage.routeName: (_) => const ReservationPage(),
-          RdvPage.routeName: (_) => const RdvPage(),
-          MessagesPage.routeName: (_) => const MessagesPage(),
-          SettingsPage.routeName: (_) => const SettingsPage(),
-        },
-        initialRoute: HomePage.routeName,
-      ),
+        );
+      },
     );
   }
 }
