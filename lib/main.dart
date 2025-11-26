@@ -4,39 +4,117 @@ const backgroundImageAsset = 'assets/images/back.png';
 const logoImageAsset = 'assets/images/logo.png';
 const _maxContentWidth = 1280.0;
 
+class UserProfile {
+  UserProfile({
+    required this.email,
+    required this.password,
+    required this.firstName,
+    required this.lastName,
+    required this.age,
+    required this.profession,
+  });
+
+  final String email;
+  final String password;
+  final String firstName;
+  final String lastName;
+  final int age;
+  final String profession;
+
+  UserProfile copyWith({
+    String? email,
+    String? password,
+    String? firstName,
+    String? lastName,
+    int? age,
+    String? profession,
+  }) {
+    return UserProfile(
+      email: email ?? this.email,
+      password: password ?? this.password,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      age: age ?? this.age,
+      profession: profession ?? this.profession,
+    );
+  }
+}
+
+class AppState extends ChangeNotifier {
+  UserProfile? _profile;
+
+  UserProfile? get profile => _profile;
+  bool get isLoggedIn => _profile != null;
+
+  void signIn(UserProfile profile) {
+    _profile = profile;
+    notifyListeners();
+  }
+
+  void updateProfile(UserProfile profile) {
+    _profile = profile;
+    notifyListeners();
+  }
+
+  void signOut() {
+    _profile = null;
+    notifyListeners();
+  }
+}
+
+class AppStateScope extends InheritedNotifier<AppState> {
+  const AppStateScope({super.key, required super.notifier, required super.child});
+
+  static AppState of(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<AppStateScope>();
+    assert(scope != null, 'AppStateScope not found in context');
+    return scope!.notifier!;
+  }
+}
+
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final AppState _appState = AppState();
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'JOKKO DIMBALI',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A4F58)),
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.transparent,
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+    return AppStateScope(
+      notifier: _appState,
+      child: MaterialApp(
+        title: 'JOKKO DIMBALI',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A4F58)),
+          useMaterial3: true,
+          scaffoldBackgroundColor: Colors.transparent,
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),
+        routes: {
+          HomePage.routeName: (_) => const HomePage(),
+          ReservationPage.routeName: (_) => const ReservationPage(),
+          RdvPage.routeName: (_) => const RdvPage(),
+          MessagesPage.routeName: (_) => const MessagesPage(),
+          SettingsPage.routeName: (_) => const SettingsPage(),
+        },
+        initialRoute: HomePage.routeName,
       ),
-      routes: {
-        HomePage.routeName: (_) => const HomePage(),
-        ReservationPage.routeName: (_) => const ReservationPage(),
-        RdvPage.routeName: (_) => const RdvPage(),
-        MessagesPage.routeName: (_) => const MessagesPage(),
-        SettingsPage.routeName: (_) => const SettingsPage(),
-      },
-      initialRoute: HomePage.routeName,
     );
   }
 }
@@ -211,12 +289,458 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppScaffold(
+    final appState = AppStateScope.of(context);
+
+    return AppScaffold(
       pageTitle: 'Paramètres du compte',
-      child: _SectionCard(
-        icon: Icons.settings_outlined,
-        title: 'Paramètres du compte',
-        description: 'Gérez vos informations et la sécurité du compte.',
+      child: AnimatedBuilder(
+        animation: appState,
+        builder: (context, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AccountHeader(appState: appState),
+              const SizedBox(height: 16),
+              if (!appState.isLoggedIn)
+                _SignInForm(appState: appState)
+              else
+                _ProfileForm(appState: appState),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AccountHeader extends StatelessWidget {
+  const _AccountHeader({required this.appState});
+
+  final AppState appState;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: colorScheme.primary.withOpacity(0.15),
+            child: const Icon(Icons.person, size: 32, color: Colors.black87),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appState.isLoggedIn
+                      ? '${appState.profile!.firstName} ${appState.profile!.lastName}'
+                      : 'Renseignez vos informations',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  appState.isLoggedIn
+                      ? 'Connecté : ${appState.profile!.email}'
+                      : 'Connectez-vous pour gérer votre compte.',
+                  style: const TextStyle(color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          if (appState.isLoggedIn)
+            OutlinedButton.icon(
+              onPressed: () => appState.signOut(),
+              icon: const Icon(Icons.logout),
+              label: const Text('Déconnexion'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SignInForm extends StatefulWidget {
+  const _SignInForm({required this.appState});
+
+  final AppState appState;
+
+  @override
+  State<_SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<_SignInForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _professionController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _ageController.dispose();
+    _professionController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final age = int.tryParse(_ageController.text.trim());
+    if (age == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Merci de saisir un âge valide.')),
+      );
+      return;
+    }
+
+    final profile = UserProfile(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      age: age,
+      profession: _professionController.text.trim(),
+    );
+
+    widget.appState.signIn(profile);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Connexion réussie !')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 6)),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Connexion / Création de compte',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              children: [
+                _LabeledField(
+                  label: 'Adresse mail',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Veuillez saisir une adresse mail'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Mot de passe',
+                  controller: _passwordController,
+                  obscureText: true,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Veuillez saisir un mot de passe'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Prénom',
+                  controller: _firstNameController,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre prénom'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Nom',
+                  controller: _lastNameController,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre nom'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Âge',
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre âge'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Profession',
+                  controller: _professionController,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre profession'
+                      : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                onPressed: _submit,
+                icon: const Icon(Icons.login),
+                label: const Text('Se connecter'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileForm extends StatefulWidget {
+  const _ProfileForm({required this.appState});
+
+  final AppState appState;
+
+  @override
+  State<_ProfileForm> createState() => _ProfileFormState();
+}
+
+class _ProfileFormState extends State<_ProfileForm> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
+  late TextEditingController _ageController;
+  late TextEditingController _professionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
+    _ageController = TextEditingController();
+    _professionController = TextEditingController();
+    _applyProfile(widget.appState.profile!);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProfileForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.appState.profile != widget.appState.profile) {
+      _applyProfile(widget.appState.profile!);
+    }
+  }
+
+  void _applyProfile(UserProfile profile) {
+    _emailController.text = profile.email;
+    _passwordController.text = profile.password;
+    _firstNameController.text = profile.firstName;
+    _lastNameController.text = profile.lastName;
+    _ageController.text = profile.age.toString();
+    _professionController.text = profile.profession;
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _ageController.dispose();
+    _professionController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final age = int.tryParse(_ageController.text.trim());
+    if (age == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Merci de saisir un âge valide.')),
+      );
+      return;
+    }
+
+    final updatedProfile = widget.appState.profile!.copyWith(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      age: age,
+      profession: _professionController.text.trim(),
+    );
+
+    widget.appState.updateProfile(updatedProfile);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profil mis à jour.')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 6)),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.verified_user, color: Colors.black87),
+                const SizedBox(width: 8),
+                Text(
+                  'Informations du compte',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              children: [
+                _LabeledField(
+                  label: 'Adresse mail',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Veuillez saisir une adresse mail'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Mot de passe',
+                  controller: _passwordController,
+                  obscureText: true,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Veuillez saisir un mot de passe'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Prénom',
+                  controller: _firstNameController,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre prénom'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Nom',
+                  controller: _lastNameController,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre nom'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Âge',
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre âge'
+                      : null,
+                ),
+                _LabeledField(
+                  label: 'Profession',
+                  controller: _professionController,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Indiquez votre profession'
+                      : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => widget.appState.signOut(),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Se déconnecter'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _submit,
+                  icon: const Icon(Icons.save_alt),
+                  label: const Text('Enregistrer'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LabeledField extends StatelessWidget {
+  const _LabeledField({
+    required this.label,
+    required this.controller,
+    this.keyboardType,
+    this.validator,
+    this.obscureText = false,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final bool obscureText;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 380,
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+        validator: validator,
       ),
     );
   }
@@ -234,6 +758,7 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final appState = AppStateScope.of(context);
 
     final navItems = [
       _NavItem(label: 'Accueil', icon: Icons.home_outlined, route: HomePage.routeName),
@@ -251,57 +776,57 @@ class _TopBar extends StatelessWidget {
           route: SettingsPage.routeName),
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 6)),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 900;
+    return AnimatedBuilder(
+      animation: appState,
+      builder: (context, _) {
+        final navButtons = Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.center,
+          children: navItems
+              .map(
+                (item) => _TopNavButton(
+              item: item,
+              isActive: activeRoute == item.route,
+              colorScheme: colorScheme,
+            ),
+          )
+              .toList(),
+        );
 
-          final navButtons = Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.center,
-            children: navItems
-                .map(
-                  (item) => _TopNavButton(
-                item: item,
-                isActive: activeRoute == item.route,
-                colorScheme: colorScheme,
+        final branding = Row(
+          children: [
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(logoImageAsset, fit: BoxFit.cover),
               ),
-            )
-                .toList(),
-          );
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Jokko Dimbali',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        );
 
-          final branding = Row(
-            children: [
-              SizedBox(
-                width: 64,
-                height: 64,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(logoImageAsset, fit: BoxFit.cover),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Jokko Dimbali',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          );
+        final profileName = appState.isLoggedIn
+            ? '${appState.profile!.firstName} ${appState.profile!.lastName}'
+            : 'Se connecter';
 
-          final profile = Container(
+        final profile = InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            if (ModalRoute.of(context)?.settings.name == SettingsPage.routeName) return;
+            Navigator.of(context).pushNamed(SettingsPage.routeName);
+          },
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -309,45 +834,51 @@ class _TopBar extends StatelessWidget {
               border: Border.all(color: Colors.black12),
             ),
             child: Row(
-              children: const [
-                CircleAvatar(
+              children: [
+                const CircleAvatar(
                   radius: 16,
                   backgroundColor: Color(0xFFD8DDE3),
                   child: Icon(Icons.person, color: Colors.black54),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  'Mamade Diatta',
-                  style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+                  profileName,
+                  style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
-          );
+          ),
+        );
 
-          if (isNarrow) {
-            return Column(
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 900;
+
+            if (isNarrow) {
+              return Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [branding, profile],
+                  ),
+                  const SizedBox(height: 12),
+                  navButtons,
+                ],
+              );
+            }
+
+            return Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [branding, profile],
-                ),
-                const SizedBox(height: 12),
-                navButtons,
+                branding,
+                const SizedBox(width: 20),
+                Expanded(child: navButtons),
+                const SizedBox(width: 20),
+                profile,
               ],
             );
-          }
-
-          return Row(
-            children: [
-              branding,
-              const SizedBox(width: 20),
-              Expanded(child: navButtons),
-              const SizedBox(width: 20),
-              profile,
-            ],
-          );
-        },
-      ),
+          },
+        );
+      },
     );
   }
 }
