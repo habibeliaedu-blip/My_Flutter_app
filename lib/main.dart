@@ -1,4 +1,10 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+
+import 'firebase_options.dart';
 
 const backgroundImageAsset = 'assets/images/back.png';
 const logoImageAsset = 'assets/images/logo.png';
@@ -41,23 +47,94 @@ class UserProfile {
 }
 
 class AppState extends ChangeNotifier {
+  AppState() {
+    _authSubscription = _auth.userChanges().listen(_handleAuthChanged);
+  }
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  StreamSubscription<User?>? _authSubscription;
   UserProfile? _profile;
 
   UserProfile? get profile => _profile;
   bool get isLoggedIn => _profile != null;
 
-  void signIn(UserProfile profile) {
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> signIn({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required int age,
+    required String profession,
+  }) async {
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        final credential = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        await credential.user?.updateDisplayName('$firstName $lastName');
+      } else {
+        rethrow;
+      }
+    }
+
+    final profile = UserProfile(
+      email: email,
+      password: password,
+      firstName: firstName,
+      lastName: lastName,
+      age: age,
+      profession: profession,
+    );
+
     _profile = profile;
     notifyListeners();
   }
 
-  void updateProfile(UserProfile profile) {
+  Future<void> updateProfile(UserProfile profile) async {
+    if (_auth.currentUser != null) {
+      await _auth.currentUser!
+          .updateDisplayName('${profile.firstName} ${profile.lastName}');
+    }
     _profile = profile;
     notifyListeners();
   }
 
-  void signOut() {
+  Future<void> signOut() async {
+    await _auth.signOut();
     _profile = null;
+    notifyListeners();
+  }
+
+  void _handleAuthChanged(User? user) {
+    if (user == null) {
+      _profile = null;
+    } else {
+      final displayName = user.displayName?.trim() ?? '';
+      final parts = displayName.split(' ');
+      final firstName = parts.isNotEmpty && parts.first.isNotEmpty
+          ? parts.first
+          : 'Utilisateur';
+      final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+      _profile = UserProfile(
+        email: user.email ?? '',
+        password: '',
+        firstName: firstName,
+        lastName: lastName,
+        age: _profile?.age ?? 0,
+        profession: _profile?.profession ?? '',
+      );
+    }
+
     notifyListeners();
   }
 }
@@ -72,7 +149,12 @@ class AppStateScope extends InheritedNotifier<AppState> {
   }
 }
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
@@ -85,6 +167,12 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final AppState _appState = AppState();
+
+  @override
+  void dispose() {
+    _appState.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -391,6 +479,7 @@ class _SignInFormState extends State<_SignInForm> {
   final _lastNameController = TextEditingController();
   final _ageController = TextEditingController();
   final _professionController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -403,7 +492,7 @@ class _SignInFormState extends State<_SignInForm> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final age = int.tryParse(_ageController.text.trim());
@@ -414,19 +503,41 @@ class _SignInFormState extends State<_SignInForm> {
       return;
     }
 
-    final profile = UserProfile(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      age: age,
-      profession: _professionController.text.trim(),
-    );
+    setState(() => _isSubmitting = true);
 
-    widget.appState.signIn(profile);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Connexion réussie !')),
-    );
+    try {
+      await widget.appState.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        age: age,
+        profession: _professionController.text.trim(),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Connexion réussie !')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      final errorText = e.message ?? 'Échec de la connexion.';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorText)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Une erreur est survenue.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -508,9 +619,9 @@ class _SignInFormState extends State<_SignInForm> {
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton.icon(
-                onPressed: _submit,
+                onPressed: _isSubmitting ? null : _submit,
                 icon: const Icon(Icons.login),
-                label: const Text('Se connecter'),
+                label: Text(_isSubmitting ? 'Connexion...' : 'Se connecter'),
               ),
             ),
           ],
@@ -537,6 +648,7 @@ class _ProfileFormState extends State<_ProfileForm> {
   late TextEditingController _lastNameController;
   late TextEditingController _ageController;
   late TextEditingController _professionController;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -578,7 +690,7 @@ class _ProfileFormState extends State<_ProfileForm> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final age = int.tryParse(_ageController.text.trim());
@@ -598,10 +710,26 @@ class _ProfileFormState extends State<_ProfileForm> {
       profession: _professionController.text.trim(),
     );
 
-    widget.appState.updateProfile(updatedProfile);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profil mis à jour.')),
-    );
+    setState(() => _isSaving = true);
+
+    try {
+      await widget.appState.updateProfile(updatedProfile);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil mis à jour.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Échec de la mise à jour du profil.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
@@ -695,9 +823,9 @@ class _ProfileFormState extends State<_ProfileForm> {
                   label: const Text('Se déconnecter'),
                 ),
                 ElevatedButton.icon(
-                  onPressed: _submit,
+                  onPressed: _isSaving ? null : _submit,
                   icon: const Icon(Icons.save_alt),
-                  label: const Text('Enregistrer'),
+                  label: Text(_isSaving ? 'Enregistrement...' : 'Enregistrer'),
                 ),
               ],
             ),
