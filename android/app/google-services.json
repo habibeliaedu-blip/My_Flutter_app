@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "272681088680",
+    "project_id": "jokko-medapp",
+    "storage_bucket": "jokko-medapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:272681088680:android:9f291df642ab6b4c45b49d",
+        "android_client_info": {
+          "package_name": "com.example.jokkodimbali"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnGxsHEj8GORq5TlxSPGQiCP8uOpK4OYI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

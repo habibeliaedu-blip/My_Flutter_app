@@ -216,6 +216,15 @@ Future<FirebaseApp> _initializeFirebase() async {
 Future<void> main() async {
   final firebaseApp = _initializeFirebase();
   runApp(MyApp(firebaseInit: firebaseApp));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
